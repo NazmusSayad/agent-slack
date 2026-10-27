@@ -97,7 +97,8 @@ agent-slack
 │   └── invite                      # invite users to channel
 ├── user
 │   ├── list
-│   └── get <user>
+│   ├── get <user>
+│   └── presence <active|away>     # set your own presence
 ├── search
 │   ├── all      <query>           # messages + files
 │   ├── messages <query>

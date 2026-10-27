@@ -241,3 +241,10 @@ export function toCompactUser(u: Record<string, unknown>): CompactSlackUser {
       typeof profile.status_expiration === "number" ? profile.status_expiration : undefined,
   };
 }
+
+export async function setPresence(
+  client: SlackApiClient,
+  presence: "active" | "away",
+): Promise<void> {
+  await client.api("users.setPresence", { presence: presence === "active" ? "auto" : "away" });
+}

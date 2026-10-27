@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import type { CliContext } from "./context.ts";
 import { pruneEmpty } from "../lib/compact-json.ts";
-import { getDmChannelForUsers, getUser, listUsers } from "../slack/users.ts";
+import { getDmChannelForUsers, getUser, listUsers, setPresence } from "../slack/users.ts";
 
 export function registerUserCommand(input: { program: Command; ctx: CliContext }): void {
   const userCmd = input.program.command("user").description("Workspace user directory");
@@ -84,6 +84,38 @@ export function registerUserCommand(input: { program: Command; ctx: CliContext }
           },
         });
         console.log(JSON.stringify(pruneEmpty(payload), null, 2));
+      } catch (err: unknown) {
+        console.error(input.ctx.errorMessage(err));
+        process.exitCode = 1;
+      }
+    });
+
+  userCmd
+    .command("presence")
+    .description("Set your own presence to active or away")
+    .argument(
+      "<presence>",
+      "active (Slack shows you active only while a Slack client is connected) or away",
+    )
+    .option(
+      "--workspace <url>",
+      "Workspace selector (full URL or unique substring; required if you have multiple workspaces)",
+    )
+    .action(async (...args) => {
+      const [presence, options] = args as [string, { workspace?: string }];
+      try {
+        if (presence !== "active" && presence !== "away") {
+          throw new Error(`Invalid presence: "${presence}". Use: active or away.`);
+        }
+        const workspaceUrl = input.ctx.effectiveWorkspaceUrl(options.workspace);
+        await input.ctx.withAutoRefresh({
+          workspaceUrl,
+          work: async () => {
+            const { client } = await input.ctx.getClientForWorkspace(workspaceUrl);
+            await setPresence(client, presence);
+          },
+        });
+        console.log(JSON.stringify({ ok: true, presence }));
       } catch (err: unknown) {
         console.error(input.ctx.errorMessage(err));
         process.exitCode = 1;
